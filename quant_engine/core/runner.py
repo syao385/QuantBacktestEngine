@@ -82,13 +82,14 @@ class EngineRunner:
             if hasattr(strategy_class, k):
                 setattr(strategy_class, k, v)
 
-        # 3. Instantiate and run backtesting.Backtest
+        # 3. Instantiate and run backtesting.Backtest with finalize_trades=True
         bt = Backtest(
             df,
             strategy_class,
             cash=cash,
             commission=commission,
-            exclusive_orders=True
+            exclusive_orders=True,
+            finalize_trades=True
         )
 
         stats = bt.run(**params)

@@ -98,6 +98,10 @@ class QuantStrategy(Strategy):
         )
 
         if shares <= 0:
+            # Fallback to at least 1 share if account capital allows
+            shares = 1.0 if float(self.equity) >= curr_close else 0.0
+
+        if shares <= 0:
             return
 
         initial_stop = sl if sl is not None else (curr_close - (curr_atr * self.atr_multiplier))
@@ -108,7 +112,11 @@ class QuantStrategy(Strategy):
             atr=curr_atr
         )
 
-        # Convert share count to fraction of equity (size in backtesting.py can be float fraction (0, 1])
-        equity_fraction = min((shares * curr_close) / float(self.equity), self.max_position_pct)
-        if equity_fraction > 0:
-            self.buy(size=equity_fraction, sl=initial_stop)
+        # Calculate share count integer or equity fraction
+        if shares >= 1.0:
+            order_size = int(shares)
+        else:
+            order_size = min((shares * curr_close) / float(self.equity), 0.95)
+
+        if order_size > 0:
+            self.buy(size=order_size)

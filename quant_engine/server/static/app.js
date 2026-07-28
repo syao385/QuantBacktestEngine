@@ -56,30 +56,17 @@ document.addEventListener('DOMContentLoaded', () => {
         btnRunBacktest.innerText = "⏳ Running Backtest...";
 
         try {
-            // Parse raw spec string or build payload
-            let specObj = {};
-            try {
-                specObj = JSON.parse(specRaw);
-            } catch (e) {
-                // If YAML string, send as spec or default dict
-                specObj = {
-                    name: "InteractiveStrategy",
-                    indicators: {
-                        ema_fast: { type: "EMA", period: 10 },
-                        ema_slow: { type: "EMA", period: 30 }
-                    },
-                    position_sizing: { type: sizerType, risk_pct: riskPct },
-                    rules: { entry_long: "ema_fast > ema_slow" }
-                };
-            }
-
             const response = await fetch('/api/backtest', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     symbol: symbol,
                     cash: cash,
-                    strategy_spec: specObj
+                    strategy_spec: specRaw,
+                    parameters: {
+                        risk_pct: riskPct,
+                        sizer_type: sizerType
+                    }
                 })
             });
 
@@ -112,21 +99,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnRunOptuna = document.getElementById('btn-run-optuna');
     btnRunOptuna.addEventListener('click', async () => {
         const symbol = document.getElementById('input-symbol').value;
+        const specRaw = document.getElementById('input-spec-editor').value;
         const outputPre = document.getElementById('optuna-output');
 
         btnRunOptuna.innerText = "⏳ Running Optuna TPE Search...";
         outputPre.innerText = "Running 20-trial Optuna Bayesian Optimization over parameter space...";
 
         try {
-            const specObj = {
-                name: "OptunaTuningStrategy",
-                indicators: {
-                    ema_fast: { type: "EMA", period: 10 },
-                    ema_slow: { type: "EMA", period: 30 }
-                },
-                rules: { entry_long: "ema_fast > ema_slow" }
-            };
-
             const response = await fetch('/api/optimize', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -135,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: "optuna",
                     n_trials: 20,
                     target_metric: "sharpe_ratio",
-                    strategy_spec: specObj,
+                    strategy_spec: specRaw,
                     param_bounds: {
                         "risk_pct": [0.01, 0.04],
                         "atr_multiplier": [1.5, 4.0]

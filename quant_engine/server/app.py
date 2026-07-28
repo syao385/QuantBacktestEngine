@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Union
 from quant_engine import __version__
 from quant_engine.core.runner import EngineRunner
 from quant_engine.strategy.declarative import DeclarativeStrategyParser
@@ -19,7 +19,6 @@ app = FastAPI(
     version=__version__
 )
 
-# Enable CORS for cross-origin access
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -30,14 +29,13 @@ app.add_middleware(
 
 repo = StrategyRepository()
 
-# Request Pydantic Schemas
 class BacktestRequest(BaseModel):
     symbol: str = "SPY"
     cash: float = 100000.0
     commission: float = 0.0005
     start_date: Optional[str] = None
     end_date: Optional[str] = None
-    strategy_spec: Optional[Dict[str, Any]] = None
+    strategy_spec: Optional[Union[Dict[str, Any], str]] = None
     parameters: Optional[Dict[str, Any]] = None
 
 class StrategySaveRequest(BaseModel):
@@ -48,10 +46,10 @@ class StrategySaveRequest(BaseModel):
 
 class OptimizeRequest(BaseModel):
     symbol: str = "SPY"
-    method: str = "optuna" # 'optuna' or 'grid'
+    method: str = "optuna"
     n_trials: int = 20
     target_metric: str = "sharpe_ratio"
-    strategy_spec: Dict[str, Any]
+    strategy_spec: Union[Dict[str, Any], str]
     param_bounds: Dict[str, Any]
 
 @app.get("/api/health")
@@ -91,16 +89,17 @@ def run_backtest(req: BacktestRequest):
             strategy_params=req.parameters
         )
         
-        # Save run record
+        spec_name = spec.get("name", "Strategy") if isinstance(spec, dict) else "DeclarativeStrategy"
+        spec_ver = spec.get("version", "1.0.0") if isinstance(spec, dict) else "1.0.0"
+        
         repo.save_run(
-            strategy_name=spec.get("name", "Strategy"),
-            version=spec.get("version", "1.0.0"),
+            strategy_name=spec_name,
+            version=spec_ver,
             symbol=req.symbol,
             parameters=req.parameters or {},
             metrics=result.metrics
         )
         
-        # Extract equity curve points for UI chart rendering
         eq_list = []
         if isinstance(result.equity_curve, pd.Series):
             for ts, val in result.equity_curve.items():
@@ -152,7 +151,6 @@ def run_optimization(req: OptimizeRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-# Mount static folder for web UI dashboard
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 if not os.path.exists(static_dir):
     os.makedirs(static_dir, exist_ok=True)

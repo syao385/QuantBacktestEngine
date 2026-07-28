@@ -72,8 +72,8 @@ class DeclarativeStrategyParser:
                     if ind1_name in self.ind_map and ind2_name in self.ind_map:
                         ind1 = self.ind_map[ind1_name]
                         ind2 = self.ind_map[ind2_name]
-                        if len(ind1) >= 2 and len(ind2) >= 2:
-                            if ind1[-2] <= ind2[-2] and ind1[-1] > ind2[-1]:
+                        if len(ind1) >= 1 and len(ind2) >= 1:
+                            if ind1[-1] > ind2[-1] and not self.position:
                                 self.enter_long()
 
         GeneratedDeclarativeStrategy.__name__ = name
