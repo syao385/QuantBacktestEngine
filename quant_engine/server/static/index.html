@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuantBacktestEngine | Institutional Backtesting & Optimization Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js for high-performance canvas charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="logo-icon">⚡</div>
+                <div class="brand-text">
+                    <h2>QuantEngine</h2>
+                    <span class="version-badge">v0.1.0</span>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <button class="nav-item active" data-tab="tab-backtest">
+                    <span class="nav-icon">📈</span>
+                    <span>Backtest & Simulation</span>
+                </button>
+                <button class="nav-item" data-tab="tab-optimize">
+                    <span class="nav-icon">🧬</span>
+                    <span>Optuna Optimization</span>
+                </button>
+                <button class="nav-item" data-tab="tab-compare">
+                    <span class="nav-icon">⚖️</span>
+                    <span>Version Comparison</span>
+                </button>
+                <button class="nav-item" data-tab="tab-strategies">
+                    <span class="nav-icon">📜</span>
+                    <span>Strategy Repository</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="system-status">
+                    <span class="status-dot"></span>
+                    <span>API Server Connected</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header Bar -->
+            <header class="top-header">
+                <div class="header-title">
+                    <h1 id="page-heading">Backtest Execution & Visual Analytics</h1>
+                    <p class="subtitle">Institutional Equity Trading Engine with Dynamic Risk Sizing & Trailing Stops</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary" id="btn-run-backtest">
+                        <span>▶ Run Backtest</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- TAB 1: BACKTEST EXECUTION -->
+            <div class="tab-content active" id="tab-backtest">
+                <div class="grid-container">
+                    <!-- Config Panel -->
+                    <div class="card config-panel">
+                        <h3 class="card-title">⚙️ Strategy Parameters</h3>
+                        <div class="form-group">
+                            <label for="input-symbol">Ticker Symbol</label>
+                            <input type="text" id="input-symbol" value="SPY" class="form-control">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="input-cash">Initial Capital ($)</label>
+                                <input type="number" id="input-cash" value="100000" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="input-risk-pct">Risk % per Trade</label>
+                                <input type="number" step="0.1" id="input-risk-pct" value="1.5" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="input-sizer-type">Position Sizing Model</label>
+                            <select id="input-sizer-type" class="form-control">
+                                <option value="atr_risk">ATR Volatility Risk Sizing</option>
+                                <option value="fractional_kelly">Fractional Kelly Criterion</option>
+                                <option value="volatility_parity">Volatility Parity</option>
+                                <option value="fixed_pct">Fixed Equity Percentage</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="input-spec-editor">YAML Strategy Spec</label>
+                            <textarea id="input-spec-editor" class="code-editor" rows="12">
+name: "GEX_Breakout_Strategy"
+version: "1.2.0"
+indicators:
+  ema_fast: { type: "EMA", period: 10 }
+  ema_slow: { type: "EMA", period: 30 }
+position_sizing:
+  type: "atr_risk"
+  risk_pct: 0.015
+  drawdown_scaling: true
+trailing_stop:
+  atr_multiplier: 3.0
+  breakeven_trigger_r: 1.0
+rules:
+  entry_long: "ema_fast > ema_slow"
+                            </textarea>
+                        </div>
+                    </div>
+
+                    <!-- Chart & Metrics Panel -->
+                    <div class="card chart-panel">
+                        <!-- Key Metrics Summary Grid -->
+                        <div class="metrics-grid">
+                            <div class="metric-card">
+                                <span class="metric-label">Total Return</span>
+                                <span class="metric-value" id="metric-return">--</span>
+                            </div>
+                            <div class="metric-card">
+                                <span class="metric-label">Sharpe Ratio</span>
+                                <span class="metric-value highlight" id="metric-sharpe">--</span>
+                            </div>
+                            <div class="metric-card">
+                                <span class="metric-label">Max Drawdown</span>
+                                <span class="metric-value danger" id="metric-drawdown">--</span>
+                            </div>
+                            <div class="metric-card">
+                                <span class="metric-label">Win Rate</span>
+                                <span class="metric-value" id="metric-winrate">--</span>
+                            </div>
+                        </div>
+
+                        <!-- Main Equity Curve Chart -->
+                        <div class="chart-container">
+                            <canvas id="equityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: OPTUNA OPTIMIZATION -->
+            <div class="tab-content" id="tab-optimize">
+                <div class="card">
+                    <h3 class="card-title">🧬 Optuna Bayesian Hyperparameter Optimization</h3>
+                    <p class="text-muted">Runs Tree-structured Parzen Estimator (TPE) search across strategy parameter surfaces.</p>
+                    <div class="form-row" style="margin-top: 15px;">
+                        <button class="btn btn-primary" id="btn-run-optuna">Run 20-Trial Optuna Optimization</button>
+                    </div>
+                    <div class="optuna-results" style="margin-top: 20px;">
+                        <pre id="optuna-output" class="code-block">Click "Run 20-Trial Optuna Optimization" to launch Bayesian parameter tuning...</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: VERSION COMPARISON -->
+            <div class="tab-content" id="tab-compare">
+                <div class="card">
+                    <h3 class="card-title">⚖️ Strategy Version Side-by-Side Comparison</h3>
+                    <p class="text-muted">Compare CAGR, Sharpe Ratio, Win Rate, and Drawdowns across strategy iterations.</p>
+                    <div id="comparison-table-container" style="margin-top: 20px;">
+                        <p class="text-muted">Run backtests for multiple strategy versions to populate matrix comparison.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: REPOSITORY -->
+            <div class="tab-content" id="tab-strategies">
+                <div class="card">
+                    <h3 class="card-title">📜 Strategy Specification Repository</h3>
+                    <div id="repository-list" style="margin-top: 15px;">
+                        <p class="text-muted">Loading registered strategy versions...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
